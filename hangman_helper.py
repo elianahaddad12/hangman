@@ -1,20 +1,11 @@
 import random
-import sys
 
-global _game
-global _wordchoice
-global _word_place
-global _games_count
-global _points
+POINTS_INITIAL = 10
+HINT_LENGTH = 3
 
-POINTS_INITIAL = 2
-HINT_LENGTH = 4
-
-LETTER = 11
-WORD = 21
-HINT = 31
-
-ABC = 'abcdefghijklmnopqrstuvwxyz'
+LETTER = 1
+WORD = 2
+HINT = 3
 
 _rand = random.Random()
 play_again_request = False
@@ -31,73 +22,82 @@ def set_seed(a=None):
 
 
 def load_words(file='words.txt'):
-    print("(LOAD_WORDS)")
-    global _games_count, _word_place
-    _games_count = 1
-    return _wordchoice
+    """
+    Loads a list of 58110 words from words.txt file
+    :param file: The file of words
+    :return: A list containing all the words from the file
+    """
+    words = []
+    f_words = open(file)
+    for line in f_words:
+        word = line.strip()
+        if(word.isalpha()):
+            words.append(line.strip())
+    f_words.close()
+    return words
 
 
 def get_random_word(words_list):
-    print("(GET_RANDOM_WORD)")
-    global _word_place
-    _word_place += 1
-    return _wordchoice[_word_place]
+    """
+    Gets a random word out of the given list of words
+    :param words_list: A list of words
+    :return: Some random word from the list
+    """
+    return _rand.choice(words_list)
 
 
 def get_input():
-    return _game.get_input()
+    """
+    Asks the player for his input. He can guess a letter, a word of asks for a hint.
+    :return: a tuple of 2 values:
+              if the player guesses a letter, returns (LETTER, letter)
+              if the player guesses a word, returns (WORD, word)
+              if the player asks for a hint, returns (HINT, None)
+    """
+    choice = input("Enter '!*' to guess a word (replace '*' with your guess), enter '?' to ask for a hint: ")
+    if choice == '?':
+        return HINT, None
+    elif choice and choice[0]=='!':
+        return WORD, choice[1:]
+    return LETTER, choice
 
 
 def display_state(pattern, wrong_guess_lst, points, msg):
-    global _points
-    _points = points
-    if type(wrong_guess_lst) is list:
-        try:
-            wrong_guess_lst = sorted(wrong_guess_lst)
-        except TypeError:
-            pass
-    print(f"(DISPLAY_STATE '{pattern}', {wrong_guess_lst}, {points})")
-    if points == 0:
-        assert _wordchoice[_word_place] in msg,\
-            f"The hidden word {_wordchoice[_word_place]} should be " \
-            f"displayed. Actual message is '{msg}'."
+    """
+    Prints the current state of the game to the player
+    :param pattern: the current pattern
+    :param wrong_guess_lst: the current list of wrongs guesses
+    :param points: the current amount of points the player have
+    :param msg: some additional message to the player
+    :return: None
+    """
+    print('Wrong guesses:',wrong_guess_lst)
+    print('Current pattern:', " ".join(pattern))
+    print('Current points:',points)
+    print(msg)
 
 
 def show_suggestions(matches):
-    print(f"(SHOW_SUGGESTIONS {matches})")
+    """
+    Prints a list of suggestions to the player
+    :param matches: a list of words
+    :return: None
+    """
+    print('Some possible words are:')
+    print(matches)
 
 
 def play_again(msg):
-    print("(PLAY_AGAIN)")
-    assert str(_games_count) in msg, f"Games count {_games_count} should be " \
-                                     f"displayed. Actual message is '{msg}'"
-    assert _points == 0 or str(_points) in msg, f"Points state {_points} " \
-                                              f"should be " \
-                                f"displayed. Actual message is '{msg}'."
-    return _game.newgame()
-
-
-class Game(object):
-    def __init__(self, inputs=[], nextgames=0):
-        self.nextgames = nextgames
-        self.inputs = inputs[::-1]
-        self.errs = len(ABC)
-
-    def newgame(self):
-        self.nextgames -= 1
-        global _games_count
-        if _points:
-            _games_count += 1
-        else:
-            _games_count = 1
-        return self.nextgames >= 0
-
-    def get_input(self):
-        if self.inputs:
-            return self.inputs.pop()
-        elif self.errs > 0:
-            print("(TOO_MANY_INPUTS)")
-            self.errs -= 1
-            return LETTER, ABC[self.errs]
-        else:
-            raise Exception('No inputs left. Game should be over already.')
+    """
+    Prints the message to the player, and gets input from him if she wants to play again.
+    :param msg: The message printed to the player
+    :return: True if she wants to play again, False otherwise
+    """
+    print(msg)
+    print("Enter 'Y' or 'y' for YES, 'N' or 'n' for NO:")
+    while True:
+        choice = input()
+        if choice and choice[0] in 'yY':
+            return True
+        if choice and choice[0] in 'nN':
+            return False
